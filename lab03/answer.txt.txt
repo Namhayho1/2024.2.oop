@@ -1,0 +1,53 @@
+1. What class should implement the Comparable interface?
+Trả lời: Lớp Media nên triển khai Comparable<Media>
+Lý do: Mục tiêu là so sánh các đối tượng Media với nhau để sắp xếp chúng trong giỏ hàng (Cart) hoặc cửa hàng (Store). Bằng cách triển khai Comparable trong lớp cơ sở Media, bạn định nghĩa một "thứ tự tự nhiên" (natural ordering) cho tất cả các loại media (Book, CD, DVD). Các lớp con sẽ kế thừa khả năng so sánh này.
+2. In those classes, how should you implement the compareTo() method to reflect the ordering that we want?
+Trả lời: Phương thức compareTo(Media other) sẽ được triển khai bên trong lớp Media. Nó phải trả về:
+Số âm (< 0) nếu đối tượng hiện tại (this) đứng trước other.
+Số không (0) nếu this và other được coi là bằng nhau về thứ tự sắp xếp.
+Số dương (> 0) nếu this đứng sau other.
+Triển khai cho "by title then cost" (natural order - giả sử thứ tự tự nhiên là thế này):
+public int compareTo(Media other) {
+    // Xử lý trường hợp null (ví dụ: đối tượng không có title)
+    if (this.getTitle() == null && other.getTitle() == null) {
+        return 0; // Cả hai null, coi là bằng nhau
+    }
+    if (this.getTitle() == null) {
+        return 1; // null đứng sau non-null
+    }
+    if (other.getTitle() == null) {
+        return -1; // non-null đứng trước null
+    }
+
+    // So sánh title (không phân biệt hoa thường)
+    int titleCompare = this.getTitle().compareToIgnoreCase(other.getTitle());
+
+    if (titleCompare != 0) {
+        // Nếu title khác nhau, trả về kết quả so sánh title
+        return titleCompare;
+    } else {
+        // Nếu title giống nhau, so sánh cost giảm dần (yêu cầu là cost cao hơn đứng trước)
+        // Float.compare(f1, f2) trả về <0 nếu f1<f2, 0 nếu f1==f2, >0 nếu f1>f2
+        // Muốn giảm dần, ta đảo ngược: so sánh other.getCost() với this.getCost()
+        return Float.compare(other.getCost(), this.getCost());
+    }
+}
+JavaTriển khai cho "by cost then title": Bạn không thể triển khai đồng thời cách sắp xếp này trong cùng phương thức compareTo(). Phương thức compareTo() chỉ định nghĩa một thứ tự tự nhiên duy nhất cho lớp.
+3. Can we have two ordering rules of the item (by title then cost and by cost then title) if we use this Comparable interface approach?
+Trả lời: Không.
+Lý do: Interface Comparable và phương thức compareTo() của nó chỉ định nghĩa một "thứ tự tự nhiên" duy nhất cho các đối tượng của một lớp. Bạn phải chọn một trong hai quy tắc (ví dụ: theo title rồi cost) làm thứ tự mặc định, tự nhiên khi sắp xếp mà không chỉ định Comparator. Để có nhiều quy tắc sắp xếp khác nhau, bạn bắt buộc phải sử dụng các lớp Comparator riêng biệt.
+4. Suppose the DVDs have a different ordering rule from the other media types, that is by title, then decreasing length, then cost. How would you modify your code to allow this?
+Trả lời: Việc triển khai điều này chỉ bằng Comparable sẽ rất phức tạp, không được khuyến khích và có thể vi phạm nguyên tắc thiết kế tốt.
+Cách tiếp cận (không lý tưởng) bằng Comparable:
+Trong phương thức compareTo(Media other) của lớp Media, bạn phải kiểm tra kiểu của cả this và other bằng instanceof.
+Nếu cả this và other đều là instanceof DigitalVideoDisc, bạn sẽ ép kiểu chúng thành DigitalVideoDisc và áp dụng logic so sánh 3 bước:
+So sánh title (tăng dần). Nếu khác nhau, trả về kết quả.
+Nếu title giống nhau, so sánh length (giảm dần). Sử dụng Integer.compare(otherDvd.getLength(), thisDvd.getLength()). Nếu khác nhau, trả về kết quả.
+Nếu length giống nhau, so sánh cost (ví dụ: giảm dần Float.compare(otherDvd.getCost(), thisDvd.getCost())). Trả về kết quả.
+Nếu một trong hai hoặc cả hai không phải là DigitalVideoDisc, bạn phải quay lại áp dụng logic sắp xếp "mặc định" của Media (ví dụ: theo title rồi cost).
+Vấn đề của cách tiếp cận này:
+Phương thức compareTo trở nên rất phức tạp và khó bảo trì.
+Nó vi phạm nguyên tắc Đối xứng (Symmetry) của hợp đồng compareTo: a.compareTo(b) có thể cho kết quả khác dấu với b.compareTo(a) nếu a là DVD và b là Book.
+Khó xác định cách so sánh giữa một DVD và một Book/CD một cách nhất quán.
+Cách tiếp cận tốt hơn: Sử dụng Comparator. Bạn sẽ tạo một Comparator<Media> duy nhất. Bên trong phương thức compare(Media m1, Media m2) của Comparator đó, bạn thực hiện kiểm tra instanceof và áp dụng logic phù hợp cho từng trường hợp (cả hai là DVD, cả hai không phải DVD, một là DVD một là loại khác). Cách này giữ cho logic sắp xếp phức tạp nằm ngoài các lớp Media và các lớp con của nó.
+Kết luận: Mặc dù về mặt kỹ thuật có thể cố gắng nhồi nhét logic sắp xếp phức tạp và phụ thuộc vào loại đối tượng vào phương thức compareTo() của Comparable, nhưng điều này làm cho mã khó hiểu, khó bảo trì và dễ gây lỗi. Comparator là giải pháp vượt trội và linh hoạt hơn nhiều khi bạn cần nhiều quy tắc sắp xếp hoặc các quy tắc sắp xếp phức tạp phụ thuộc vào kiểu con.
