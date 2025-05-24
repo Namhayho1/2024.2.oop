@@ -1,0 +1,23 @@
+package hust.soict.hedspi.aims.exception;
+
+public class PlayerException extends Exception {
+
+    public PlayerException() {
+        // TODO Auto-generated constructor stub
+    }
+
+    public PlayerException(String message) {
+        super(message);
+        // TODO Auto-generated constructor stub
+    }
+
+    public PlayerException(Throwable cause) {
+        super(cause);
+        // TODO Auto-generated constructor stub
+    }
+
+    public PlayerException(String message, Throwable cause) {
+        super(message, cause);
+        // TODO Auto-generated constructor s
+    }
+}
